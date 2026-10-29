@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <vector>
+#include <string>
 
 namespace snake {
 
@@ -12,7 +14,6 @@ bool is_point_in_snake(const GameState& state, const Point& p) {
     return false;
 }
 
-// Вспомогательная функция для поиска свободной клетки (для еды и бонуса)
 bool get_random_free_cell(const GameState& state, Point& out_point, Point avoid) {
     std::vector<Point> free_cells;
     for (int y = 0; y < kFieldSize; ++y) {
@@ -72,37 +73,39 @@ void print_help() {
               << "При достижении n ходов игра завершается с текущим счётом.\n\n";
 }
 
-void print_field(const GameState& state) {
-    // ИЗМЕНЕНИЕ: Убрали \033[2J (очистку), оставили только возврат курсора \033[H.
-    // Это убирает мигание.
-    std::cout << "\033[H"; 
+std::string get_field_string(const GameState& state) {
+    std::string buffer;
     
-    std::cout << "Счет: " << state.score;
+    buffer += "Счет: " + std::to_string(state.score);
     if (state.mode == GameMode::Timed) {
-        std::cout << " | Ходы: " << state.moves << "/" << state.move_limit;
+        buffer += " | Ходы: " + std::to_string(state.moves) + "/" + std::to_string(state.move_limit);
     }
     if (state.bonus_life > 0) {
-        std::cout << " | Бонус сгорит через: " << state.bonus_life;
+        buffer += " | Бонус сгорит через: " + std::to_string(state.bonus_life);
     }
-    std::cout << "          \n"; // Пробелы затирают старый текст
+    buffer += "          \n"; 
 
-    for (int i = 0; i < kFieldSize + 2; ++i) std::cout << "#";
-    std::cout << "\n";
+    // Верхняя стенка (22 символа: 10*2 + 2 края)
+    buffer += "######################\n";
 
     for (int y = 0; y < kFieldSize; ++y) {
-        std::cout << "#";
+        buffer += "#"; // Левая стенка
         for (int x = 0; x < kFieldSize; ++x) {
             Point current = {x, y};
-            if (state.snake.front() == current) std::cout << "@";
-            else if (is_point_in_snake(state, current)) std::cout << "o";
-            else if (state.food == current) std::cout << "*";
-            else if (state.bonus_life > 0 && state.bonus == current) std::cout << "$";
-            else std::cout << " ";
+            // Каждая клетка состоит из символа и пробела (ширина 2)
+            if (state.snake.front() == current) buffer += "@ ";
+            else if (is_point_in_snake(state, current)) buffer += "o ";
+            else if (state.food == current) buffer += "* ";
+            else if (state.bonus_life > 0 && state.bonus == current) buffer += "$ ";
+            else buffer += "  ";
         }
-        std::cout << "#\n";
+        buffer += "#\n"; // Правая стенка
     }
-    for (int i = 0; i < kFieldSize + 2; ++i) std::cout << "#";
-    std::cout << "\n";
+
+    // Нижняя стенка
+    buffer += "######################\n";
+    
+    return buffer;
 }
 
 void print_game_over(const GameState& state) {
@@ -116,7 +119,6 @@ void print_game_over(const GameState& state) {
     std::cout << "Ваш итоговый счет: " << state.score << "\n";
 }
 
-// ЭТА ФУНКЦИЯ НЕ ТРОГАЕТСЯ (она работала)
 void process_input(GameState& state, char input) {
     Direction old_dir = state.current_dir;
     
@@ -158,7 +160,6 @@ void move_snake(GameState& state) {
 
     state.snake.insert(state.snake.begin(), new_head);
 
-    // Логика бонуса
     if (state.bonus_life > 0) {
         if (new_head == state.bonus) {
             state.score += 3;
@@ -168,7 +169,6 @@ void move_snake(GameState& state) {
         }
     }
 
-    // Логика еды
     if (new_head == state.food) {
         state.score += 1;
         if (state.snake.size() == kFieldSize * kFieldSize) {
@@ -181,7 +181,6 @@ void move_snake(GameState& state) {
         state.snake.pop_back();
     }
     
-    // Спавн бонуса
     if (state.mode == GameMode::Timed && state.moves > 0 && state.moves % 10 == 0) {
         if (state.bonus_life == 0) {
             get_random_free_cell(state, state.bonus, {-1, -1});

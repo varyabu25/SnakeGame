@@ -1,6 +1,8 @@
 #pragma once
+
 #include <vector>
 #include <utility>
+#include <string>
 
 namespace snake {
 
@@ -18,18 +20,15 @@ struct GameState {
     bool is_game_over;
     bool is_victory;
     Direction current_dir;
-    
     GameMode mode;
     int moves;
     int move_limit;
-    
-    // --- НОВОЕ: Поля для бонуса ---
     Point bonus;
-    int bonus_life; 
+    int bonus_life;
 };
 
 void print_help();
-void print_field(const GameState& state);
+std::string get_field_string(const GameState& state);
 void print_game_over(const GameState& state);
 void init_game(GameState& state, GameMode mode, int limit);
 void spawn_food(GameState& state);
