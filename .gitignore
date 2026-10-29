@@ -1,0 +1,4 @@
+build/
+*.o
+snake_app
+test_snake
